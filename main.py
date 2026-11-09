@@ -1,23 +1,17 @@
 import chess
 import pygame
 
-# Initialize Pygame
 pygame.init()
 
-# Constants
 WIDTH, HEIGHT = 640, 640
-DIMENSION = 8  # 8x8 chess board
+DIMENSION = 8
 SQ_SIZE = HEIGHT // DIMENSION
 MAX_FPS = 15
 
-# Colors
 LIGHT_COLOR = pygame.Color("#f0d9b5")
 DARK_COLOR = pygame.Color("#b58863")
 HIGHLIGHT_COLOR = pygame.Color(255, 255, 0, 100)
 
-# Load Piece Images (We will render standard text symbols or fallback shapes if images aren't local,
-# but using text or shapes is 100% reliable without needing external asset files).
-# Let's use clean Unicode chess characters for maximum reliability!
 UNICODE_PIECES = {
     "P": "♙",
     "N": "♘",
@@ -43,6 +37,7 @@ PIECE_VALUES = {
     chess.KING: 10000,
 }
 
+MINIMAX_DEPTH = 3
 
 def evaluate_board(board):
   if board.is_checkmate():
@@ -102,8 +97,7 @@ def best_move(board, depth):
 
   return best_move_found
 
-
-# --- GUI DRAWING FUNCTIONS ---
+# GUI
 def draw_board(screen):
   for r in range(DIMENSION):
     for c in range(DIMENSION):
@@ -157,7 +151,6 @@ def draw_pieces(screen, board):
           ),
       )
 
-
 def main():
   screen = pygame.display.set_mode((WIDTH, HEIGHT))
   pygame.display.set_caption("Python Chess Bot (Minimax)")
@@ -166,6 +159,9 @@ def main():
   board = chess.Board()
   selected_square = None
   player_is_white = True  # You play as White, Bot plays as Black
+  
+  # NEW: Track whether we've already printed the game over message
+  game_over_printed = False
 
   running = True
   while running:
@@ -173,7 +169,7 @@ def main():
     if not board.is_game_over() and board.turn != player_is_white:
       pygame.display.flip()
       pygame.time.wait(300)  # Brief pause so the bot feels natural
-      ai_move = best_move(board, depth=3)
+      ai_move = best_move(board, depth=MINIMAX_DEPTH)
       if ai_move:
         board.push(ai_move)
 
@@ -181,25 +177,20 @@ def main():
       if event.type == pygame.QUIT:
         running = False
 
-      # Mouse click handling for human player
-      elif event.type == pygame.MOUSEBUTTONDOWN and board.turn == player_is_white:
-        location = pygame.mouse.get_pos()  # (x, y) pixel coordinates
+      # Mouse click handling for human player (only if game isn't over!)
+      elif event.type == pygame.MOUSEBUTTONDOWN and board.turn == player_is_white and not board.is_game_over():
+        location = pygame.mouse.get_pos()  
         col = location[0] // SQ_SIZE
         row = location[1] // SQ_SIZE
-        
-        # Convert screen row/col back to chess square index (0-63)
         clicked_square = chess.square(col, 7 - row)
 
         if selected_square is None:
-          # Select piece if it belongs to the player
           piece = board.piece_at(clicked_square)
           if piece and piece.color == player_is_white:
             selected_square = clicked_square
         else:
-          # Try to make a move from selected_square to clicked_square
           move = chess.Move(selected_square, clicked_square)
           
-          # Check for pawn promotion (default to Queen for simplicity)
           if board.piece_at(selected_square).piece_type == chess.PAWN and (
               chess.square_rank(clicked_square) == 7
               or chess.square_rank(clicked_square) == 0
@@ -208,9 +199,8 @@ def main():
 
           if move in board.legal_moves:
             board.push(move)
-            selected_square = None  # Reset selection
+            selected_square = None
           else:
-            # If invalid move or clicked another own piece, reselect
             piece = board.piece_at(clicked_square)
             if piece and piece.color == player_is_white:
               selected_square = clicked_square
@@ -221,7 +211,6 @@ def main():
     screen.fill((255, 255, 255))
     draw_board(screen)
     
-    # Highlight selected square if any
     if selected_square is not None:
       r = 7 - (selected_square // 8)
       c = selected_square % 8
@@ -232,14 +221,16 @@ def main():
 
     draw_pieces(screen, board)
 
-    if board.is_game_over():
-      print("Game Over:", board.result())
+    # Print game over result exactly ONCE
+    if board.is_game_over() and not game_over_printed:
+      print("Game Over! Result:", board.result())
+      print("Termination reason:", board.outcome())
+      game_over_printed = True
 
     pygame.display.flip()
     clock.tick(MAX_FPS)
 
   pygame.quit()
-
 
 if __name__ == "__main__":
   main()
