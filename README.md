@@ -9,8 +9,6 @@ This project bridges low-level game-tree search theory with a modern graphical i
 * **Language:** Python
 * **Game Logic:** `python-chess`
 * **GUI Framework:** `Pygame`
-* **Environment:** VS Code with WSL (Ubuntu/Linux backend)
-* **Version Control:** Git & GitHub
 
 ## Algorithmic Architecture
 ### 1. Board Evaluation (`evaluate_board`)
@@ -31,3 +29,4 @@ While the current material-weighted evaluation function provides a solid foundat
 ## Performance Bottleneck & Future Work
 * **The Challenge:** The exponential growth of the game tree causes computation time to spike dramatically when increasing the search depth beyond 3.
 * **Proposed Solution:** Implementation of **Alpha-Beta pruning** to efficiently prune branches that do not influence the final minimax decision.
+
